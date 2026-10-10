@@ -1,0 +1,4 @@
+Pillow>=10.0
+cryptography>=42.0
+Flask>=3.0
+PySide6>=6.6
