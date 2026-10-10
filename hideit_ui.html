@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HideIt - Multi-Media Steganography Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#0a0d14',
+                            card: '#121824',
+                            border: '#1e293b',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                            neon: '#38bdf8',
+                            violet: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+        
+        body {
+            background-color: #0a0d14;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0d14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        .bg-grid-pattern {
+            background-image: radial-gradient(rgba(56, 189, 248, 0.1) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-cyber-bg text-slate-200 bg-grid-pattern flex flex-col justify-between antialiased selection:bg-cyan-500 selection:text-slate-900">
+
+    <header class="border-b border-slate-800/80 bg-cyber-bg/90 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-gradient-to-tr from-emerald-500 via-cyan-500 to-violet-500 rounded-lg text-slate-950 font-bold shadow-lg shadow-cyan-500/20">
+                    <i data-lucide="shield-lock" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl tracking-tight bg-gradient-to-r from-emerald-400 via-cyan-400 to-violet-400 bg-clip-text text-transparent">
+                        HideIt 
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Image, Audio & Video Steganography Workspace</p>
+                </div>
+            </div>
+
+            <!-- Mode Selector Tabs -->
+            <div class="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                <button id="tabEncode" onclick="switchMode('encode')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 shadow-md">
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                    <span>Encode (Hide)</span>
+                </button>
+                <button id="tabDecode" onclick="switchMode('decode')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 text-slate-400 hover:text-slate-200">
+                    <i data-lucide="unlock" class="w-4 h-4"></i>
+                    <span>Decode (Extract)</span>
+                </button>
+                <button id="tabInspector" onclick="switchMode('inspector')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 text-slate-400 hover:text-slate-200">
+                    <i data-lucide="scan-eye" class="w-4 h-4"></i>
+                    <span>Inspector</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+        <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+        <div class="mb-6 bg-cyber-card p-2 rounded-2xl border border-slate-800/80 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3">Carrier Media Format:</span>
+                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+                    <button id="mediaImageBtn" onclick="setMediaType('image')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 transition-all">
+                        <i data-lucide="image" class="w-4 h-4"></i>
+                        <span>Image (PNG/JPG)</span>
+                    </button>
+                    <button id="mediaAudioBtn" onclick="setMediaType('audio')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">
+                        <i data-lucide="music" class="w-4 h-4"></i>
+                        <span>Audio (WAV)</span>
+                    </button>
+                    <button id="mediaVideoBtn" onclick="setMediaType('video')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">
+                        <i data-lucide="video" class="w-4 h-4"></i>
+                        <span>Video (MP4/WEBM)</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="text-xs text-slate-500 font-mono hidden md:flex items-center gap-2 px-3">
+                <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
+                <span id="activeTechLabel">LSB Spatial Embedding (Lossless PNG)</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <section class="lg:col-span-5 flex flex-col gap-6">
+                <div class="bg-cyber-card rounded-2xl border border-slate-800/80 p-5 shadow-xl relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-base font-semibold flex items-center gap-2 text-slate-200">
+                            <i data-lucide="file-box" class="w-5 h-5 text-cyan-400"></i>
+                            <span id="uploadZoneTitle">Carrier File Source</span>
+                        </h2>
+                        <span id="fileTypeBadge" class="hidden text-xs font-mono bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">PNG</span>
+                    </div>
+
+                    <!-- Drag & Drop Zone -->
+                    <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-cyan-500/50 bg-slate-900/40 hover:bg-slate-900/70 rounded-xl p-6 text-center cursor-pointer transition-all duration-200 group relative overflow-hidden flex flex-col items-center justify-center min-h-[260px]">
+                        
+                        <input type="file" id="mediaInput" class="hidden" onchange="handleMediaUpload(event)">
+
+                        <div id="uploadPrompt" class="flex flex-col items-center gap-3">
+                            <div id="uploadIconContainer" class="w-14 h-14 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-cyan-400 group-hover:scale-110 group-hover:border-cyan-500/50 transition-all duration-200">
+                                <i data-lucide="upload-cloud" class="w-7 h-7"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-slate-200">Drag & drop carrier or <span class="text-cyan-400 hover:underline">browse</span></p>
+                                <p id="supportedFormatsText" class="text-xs text-slate-500 mt-1">Supports PNG, JPG, WEBP</p>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Preview Container -->
+                        <div id="previewWrapper" class="hidden w-full h-full relative group flex flex-col items-center justify-center">
+                            <!-- Image Preview -->
+                            <img id="imagePreview" class="hidden max-h-[220px] w-auto mx-auto rounded-lg object-contain border border-slate-800 shadow-md">
+                            
+                            <!-- Audio Preview & Waveform Display -->
+                            <div id="audioPreviewGroup" class="hidden w-full space-y-3 p-2">
+                                <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center gap-3">
+                                    <div class="p-2.5 bg-violet-500/20 text-violet-400 rounded-lg">
+                                        <i data-lucide="music-4" class="w-6 h-6"></i>
+                                    </div>
+                                    <div class="text-left overflow-hidden">
+                                        <p id="audioFileName" class="text-xs font-semibold text-slate-200 truncate">audio_track.wav</p>
+                                        <p id="audioMeta" class="text-[10px] font-mono text-slate-500">44.1kHz • 16-Bit PCM</p>
+                                    </div>
+                                </div>
+                                <canvas id="waveformCanvas" class="w-full h-16 bg-slate-950 rounded-lg border border-slate-800"></canvas>
+                                <audio id="audioPlayer" controls class="w-full h-8"></audio>
+                            </div>
+
+                            <!-- Video Preview -->
+                            <div id="videoPreviewGroup" class="hidden w-full space-y-2">
+                                <video id="videoPlayer" controls class="max-h-[220px] w-full rounded-lg border border-slate-800 bg-slate-950"></video>
+                            </div>
+
+                            <button onclick="resetMedia(event)" class="absolute top-2 right-2 bg-slate-950/80 hover:bg-red-500/80 text-white p-1.5 rounded-lg backdrop-blur-md transition-colors border border-slate-700 z-10">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File Specs -->
+                    <div id="mediaSpecs" class="mt-4 pt-4 border-t border-slate-800/80 grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+                            <span class="text-slate-500 block text-[10px] uppercase">Attributes</span>
+                            <span id="specDim" class="font-mono font-medium text-slate-300">--</span>
+                        </div>
+                        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+                            <span class="text-slate-500 block text-[10px] uppercase">File Size</span>
+                            <span id="specSize" class="font-mono font-medium text-slate-300">-- KB</span>
+                        </div>
+                        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+                            <span class="text-slate-500 block text-[10px] uppercase">Est. Capacity</span>
+                            <span id="specCap" class="font-mono font-medium text-emerald-400">0 KB</span>
+                        </div>
+                    </div>
+
+                    <!-- Capacity Gauge Bar -->
+                    <div class="mt-4">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400 flex items-center gap-1">
+                                Payload Usage
+                                <i data-lucide="info" class="w-3 h-3 text-slate-500" title="Proportion of total carrier storage used"></i>
+                            </span>
+                            <span id="capacityPercent" class="font-mono text-cyan-400">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+                            <div id="capacityBar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-cyber-card/60 rounded-2xl border border-slate-800/80 p-4 text-xs text-slate-400 flex items-start gap-3">
+                    <i data-lucide="cpu" class="w-5 h-5 text-cyan-400 shrink-0 mt-0.5"></i>
+                    <div>
+                        <span class="font-semibold text-slate-200 block mb-0.5">Multi-Media Steganography Guide</span>
+                        <span id="techDescription">
+                            For **Images**, HideIt uses LSB pixel embedding. For **Audio**, it embeds payload bits into the LSB of uncompressed 16-bit PCM audio samples. For **Video**, it utilizes container metadata stream injection.
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="lg:col-span-7">
+
+                <!-- 1. ENCODE FORM -->
+                <div id="encodePanel" class="bg-cyber-card rounded-2xl border border-slate-800/80 p-6 shadow-xl space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                                <i data-lucide="file-plus" class="w-5 h-5 text-emerald-400"></i>
+                                Embed Secret Payload
+                            </h2>
+                            <p class="text-xs text-slate-400">Hide text messages or confidential files inside carrier media</p>
+                        </div>
+                        <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs">
+                            <button id="typeTextBtn" onclick="togglePayloadType('text')" class="px-3 py-1 rounded-md font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                Text Message
+                            </button>
+                            <button id="typeFileBtn" onclick="togglePayloadType('file')" class="px-3 py-1 rounded-md font-medium text-slate-400 hover:text-slate-200">
+                                Secret File
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Secret Text Input -->
+                    <div id="textPayloadGroup" class="space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <label class="font-medium text-slate-300">Secret Text Message</label>
+                            <span id="charCount" class="font-mono text-slate-500">0 chars</span>
+                        </div>
+                        <textarea id="secretText" rows="4" oninput="updateCapacityGauge()" placeholder="Type your confidential message here..." class="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500/60 font-mono transition-all"></textarea>
+                    </div>
+
+                    <!-- Secret File Input -->
+                    <div id="filePayloadGroup" class="space-y-2 hidden">
+                        <label class="font-medium text-xs text-slate-300">Select Secret File (PDF, TXT, ZIP, Audio, etc.)</label>
+                        <div class="flex items-center gap-3">
+                            <button onclick="pickSecretFile()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-slate-200 flex items-center gap-2 transition-all">
+                                <i data-lucide="paperclip" class="w-4 h-4 text-cyan-400"></i>
+                                Choose Payload File
+                            </button>
+                            <span id="secretFileName" class="text-xs font-mono text-slate-400 truncate max-w-[240px]">No file chosen</span>
+                        </div>
+                    </div>
+
+                    <!-- Passphrase Encryption Options -->
+                    <div class="p-4 rounded-xl bg-slate-900/50 border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="encryptToggle" onchange="toggleEncryptionField()" class="rounded bg-slate-950 border-slate-700 text-emerald-500 focus:ring-emerald-500/20 w-4 h-4">
+                                <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                                    <i data-lucide="key-round" class="w-4 h-4 text-emerald-400"></i>
+                                    AES Passphrase Encryption
+                                </span>
+                            </label>
+                            <span class="text-[10px] text-slate-500 font-mono">OPTIONAL</span>
+                        </div>
+
+                        <div id="encryptionFields" class="hidden space-y-3 pt-2">
+                            <div class="relative">
+                                <input type="password" id="encodePassphrase" oninput="checkPasswordStrength(this.value)" placeholder="Enter strong encryption passphrase" class="w-full bg-slate-950 border border-slate-800 rounded-lg py-2 px-3 pr-10 text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500">
+                                <button type="button" onclick="togglePassVisibility('encodePassphrase')" class="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-[10px]">
+                                    <span class="text-slate-400">Strength</span>
+                                    <span id="passStrengthLabel" class="font-mono text-slate-500">None</span>
+                                </div>
+                                <div class="w-full bg-slate-950 h-1 rounded-full overflow-hidden">
+                                    <div id="passStrengthBar" class="bg-slate-700 h-full w-0 transition-all"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bit Depth / Carrier Specific Controls -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-slate-300 flex items-center gap-1">
+                                Carrier LSB Bit Depth
+                                <i data-lucide="layers" class="w-3 h-3 text-slate-500"></i>
+                            </label>
+                            <select id="bitDepthSelect" onchange="updateCapacityGauge()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                                <option value="1">1 Bit per sample/channel (Maximum Quality)</option>
+                                <option value="2">2 Bits per sample/channel (High Capacity)</option>
+                                <option value="3">3 Bits per sample/channel (Max Storage)</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-slate-300">Output Target Container</label>
+                            <input id="targetContainerFormat" type="text" readonly value="PNG (Lossless)" class="w-full bg-slate-900/60 border border-slate-800 rounded-lg p-2 text-xs text-slate-400 font-mono">
+                        </div>
+                    </div>
+
+                    <!-- Encode Button -->
+                    <button onclick="executeEncoding()" class="w-full py-3 bg-gradient-to-r from-emerald-500 via-cyan-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2 transition-all transform active:scale-[0.99]">
+                        <i data-lucide="lock" class="w-5 h-5"></i>
+                        <span>Encode & Download Modified Media</span>
+                    </button>
+                </div>
+
+                <!-- 2. DECODE FORM -->
+                <div id="decodePanel" class="bg-cyber-card rounded-2xl border border-slate-800/80 p-6 shadow-xl space-y-6 hidden">
+                    <div class="border-b border-slate-800/80 pb-4">
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="unlock" class="w-5 h-5 text-cyan-400"></i>
+                            Extract Embedded Data
+                        </h2>
+                        <p class="text-xs text-slate-400">Scan modified carrier file and extract hidden message or file payload</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-slate-300">Decryption Passphrase (If Passphrase Protected)</label>
+                            <div class="relative">
+                                <input type="password" id="decodePassphrase" placeholder="Enter encryption passphrase" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 pr-10 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500">
+                                <button type="button" onclick="togglePassVisibility('decodePassphrase')" class="absolute right-3 top-3 text-slate-500 hover:text-slate-300">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-slate-300">Carrier Extraction Bit Depth</label>
+                            <select id="decodeBitDepth" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                                <option value="0">Auto-detect from payload header (Default)</option>
+                            </select>
+                        </div>
+
+                        <button onclick="executeDecoding()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-cyan-400 hover:to-sky-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-cyan-500/10 flex items-center justify-center gap-2 transition-all transform active:scale-[0.99]">
+                            <i data-lucide="scan-text" class="w-5 h-5"></i>
+                            <span>Extract Payload</span>
+                        </button>
+                    </div>
+
+                    <!-- Decoded Output View -->
+                    <div id="extractionResultBox" class="hidden border-t border-slate-800/80 pt-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                Payload Extracted Successfully
+                            </span>
+                            <span id="decodedTypeBadge" class="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">TEXT</span>
+                        </div>
+
+                        <div id="decodedTextWrapper" class="space-y-2">
+                            <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl font-mono text-xs text-slate-200 max-h-48 overflow-y-auto whitespace-pre-wrap break-all" id="decodedTextOutput"></div>
+                            <button onclick="copyDecodedText()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg flex items-center gap-1.5 transition-colors">
+                                <i data-lucide="copy" class="w-3.5 h-3.5 text-cyan-400"></i>
+                                Copy Text
+                            </button>
+                        </div>
+
+                        <div id="decodedFileWrapper" class="hidden p-4 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg border border-cyan-500/20">
+                                    <i data-lucide="file-down" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <p id="decodedFileName" class="text-xs font-medium text-slate-200">extracted_file.bin</p>
+                                    <p id="decodedFileSize" class="text-[10px] text-slate-500">0 KB</p>
+                                </div>
+                            </div>
+                            <a id="decodedFileDownloadBtn" href="#" onclick="saveExtracted(event)" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow transition-colors">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                Download
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. INSPECTOR PANEL -->
+                <div id="inspectorPanel" class="bg-cyber-card rounded-2xl border border-slate-800/80 p-6 shadow-xl space-y-6 hidden">
+                    <div class="border-b border-slate-800/80 pb-4">
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="scan-eye" class="w-5 h-5 text-sky-400"></i>
+                            Stego Artifact & Bit Analysis
+                        </h2>
+                        <p class="text-xs text-slate-400">Visualize bit planes for images or audio frequency noise density</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-medium text-slate-300">Visualization Filter</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button onclick="renderBitPlane('rgb')" class="p-2 text-xs bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-lg font-mono text-slate-300">Standard View</button>
+                            <button onclick="renderBitPlane('lsb1')" class="p-2 text-xs bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-lg font-mono text-cyan-400">LSB Plane 0</button>
+                            <button onclick="renderBitPlane('lsb2')" class="p-2 text-xs bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-lg font-mono text-cyan-400">LSB Plane 1</button>
+                            <button onclick="renderBitPlane('noise')" class="p-2 text-xs bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-lg font-mono text-emerald-400">Noise Heatmap</button>
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-800 bg-slate-950 rounded-xl p-3 flex flex-col items-center justify-center min-h-[250px]">
+                        <canvas id="inspectorCanvas" class="max-h-[300px] w-auto rounded object-contain"></canvas>
+                        <span id="inspectorPlaceholder" class="text-xs text-slate-600">Upload carrier media to analyze artifacts</span>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <footer class="border-t border-slate-800/60 bg-cyber-bg/90 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <i data-lucide="shield" class="w-4 h-4 text-emerald-400"></i>
+                <span>HideIt Steganography Studio &bull; Image, Audio & Video Secure Workspace</span>
+            </div>
+            <p>100% Local Desktop Operations &bull; No Server Data Transmission</p>
+        </div>
+    </footer>
+
+    <script>
+        // ===== HideIt desktop bridge: the engine runs in Python (pywebview js_api) =====
+        let currentMode = 'encode';
+        let activeMediaType = 'image'; // 'image', 'audio', 'video'
+        let activePayloadType = 'text';
+        let carrier = null;            // summary returned by Python for the loaded carrier
+        let secretInfo = null;         // { name, size } of the chosen secret file
+        let lastDecoded = null;
+        const AES_OVERHEAD = 44;       // salt(16) + nonce(12) + GCM tag(16)
+
+        const api = () => (window.pywebview && window.pywebview.api) ? window.pywebview.api : null;
+        function needApi() {
+            if (!api()) { showToast('Desktop engine is still starting. Try again in a moment.', 'error'); return false; }
+            return true;
+        }
+
+        // Fallback glyphs in case an icon name is missing from the CDN build of Lucide
+        const FALLBACK_ICONS = {
+            'shield-lock': '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10 11V9.5a2 2 0 0 1 4 0V11"/>',
+            'check-circle-2': '<path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>',
+            'check-circle': '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+            'alert-triangle': '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+            'upload-cloud': '<path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/>',
+            'music-4': '<path d="M9 18V5l12-2v13"/><path d="m9 9 12-2"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'
+        };
+        function renderIcons() {
+            if (window.lucide) lucide.createIcons();
+            document.querySelectorAll('i[data-lucide]').forEach(el => {
+                const inner = FALLBACK_ICONS[el.getAttribute('data-lucide')];
+                if (!inner) return;
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('viewBox', '0 0 24 24');
+                svg.setAttribute('fill', 'none');
+                svg.setAttribute('stroke', 'currentColor');
+                svg.setAttribute('stroke-width', '2');
+                svg.setAttribute('stroke-linecap', 'round');
+                svg.setAttribute('stroke-linejoin', 'round');
+                svg.setAttribute('class', el.getAttribute('class') || '');
+                svg.innerHTML = inner;
+                el.replaceWith(svg);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderIcons();
+            setupDragAndDrop();
+            syncDepthState();
+        });
+
+        // Switch Media Type (Image / Audio / Video)
+        function setMediaType(type) {
+            activeMediaType = type;
+
+            const btns = {
+                image: document.getElementById('mediaImageBtn'),
+                audio: document.getElementById('mediaAudioBtn'),
+                video: document.getElementById('mediaVideoBtn')
+            };
+
+            Object.keys(btns).forEach(key => {
+                btns[key].className = "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all";
+            });
+
+            if (type === 'image') {
+                btns.image.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 transition-all";
+                document.getElementById('supportedFormatsText').innerText = "Supports PNG, JPG, WEBP, BMP";
+                document.getElementById('activeTechLabel').innerText = "LSB Spatial Embedding (PNG Output)";
+                document.getElementById('targetContainerFormat').value = "PNG (Lossless)";
+                document.getElementById('techDescription').innerText = "For Images, HideIt uses LSB pixel embedding. It alters the lowest bits of RGB pixel values to store bits of the secret payload without perceptible visual changes.";
+            } else if (type === 'audio') {
+                btns.audio.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-violet-500/20 text-violet-300 border border-violet-500/40 transition-all";
+                document.getElementById('supportedFormatsText').innerText = "Supports uncompressed 8/16-bit WAV audio files";
+                document.getElementById('activeTechLabel').innerText = "PCM Sample LSB Embedding";
+                document.getElementById('targetContainerFormat').value = "WAV (Uncompressed PCM)";
+                document.getElementById('techDescription').innerText = "For Audio, HideIt embeds bits into the least significant bits of PCM audio samples. The modifications are practically unnoticeable to human hearing.";
+            } else if (type === 'video') {
+                btns.video.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition-all";
+                document.getElementById('supportedFormatsText').innerText = "Supports MP4, WEBM, MKV, MOV video files";
+                document.getElementById('activeTechLabel').innerText = "Video Container Trailer Injection";
+                document.getElementById('targetContainerFormat').value = "MP4 / WEBM Container";
+                document.getElementById('techDescription').innerText = "For Video, HideIt appends the payload as a hidden trailer after the container data, leaving video and audio playback completely intact. Re-encoding the video removes it.";
+            }
+
+            resetMedia();
+        }
+
+        // Mode Navigation Switcher
+        function switchMode(mode) {
+            currentMode = mode;
+            const tabs = ['tabEncode', 'tabDecode', 'tabInspector'];
+            tabs.forEach(t => document.getElementById(t).className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 text-slate-400 hover:text-slate-200");
+
+            document.getElementById('encodePanel').classList.add('hidden');
+            document.getElementById('decodePanel').classList.add('hidden');
+            document.getElementById('inspectorPanel').classList.add('hidden');
+
+            if (mode === 'encode') {
+                document.getElementById('tabEncode').className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 shadow-md";
+                document.getElementById('encodePanel').classList.remove('hidden');
+                document.getElementById('uploadZoneTitle').innerText = "Carrier File Source";
+            } else if (mode === 'decode') {
+                document.getElementById('tabDecode').className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 bg-gradient-to-r from-cyan-500 to-sky-500 text-slate-950 shadow-md";
+                document.getElementById('decodePanel').classList.remove('hidden');
+                document.getElementById('uploadZoneTitle').innerText = "Stego Media Source";
+            } else if (mode === 'inspector') {
+                document.getElementById('tabInspector').className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 bg-gradient-to-r from-sky-500 to-indigo-500 text-slate-950 shadow-md";
+                document.getElementById('inspectorPanel').classList.remove('hidden');
+                document.getElementById('uploadZoneTitle').innerText = "Inspection Carrier Source";
+                renderBitPlane('rgb', true);
+            }
+        }
+
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+            ['dragover', 'drop'].forEach(n => window.addEventListener(n, e => e.preventDefault()));
+            ['dragenter', 'dragover'].forEach(name => {
+                dropZone.addEventListener(name, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('border-cyan-500', 'bg-slate-900/80');
+                });
+            });
+            ['dragleave', 'drop'].forEach(name => {
+                dropZone.addEventListener(name, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('border-cyan-500', 'bg-slate-900/80');
+                });
+            });
+            dropZone.addEventListener('drop', async (e) => {
+                const file = e.dataTransfer.files[0];
+                if (!file) return;
+                if (api() && file.pywebviewFullPath) {
+                    handleCarrierResult(await api().load_path(file.pywebviewFullPath, activeMediaType));
+                } else {
+                    previewLocalFile(file);
+                }
+            });
+            dropZone.addEventListener('click', (e) => {
+                if (e.target.id === 'mediaInput') return;
+                if (!carrier) browseCarrier();
+            });
+        }
+
+        async function browseCarrier() {
+            if (api()) { handleCarrierResult(await api().pick_carrier(activeMediaType)); return; }
+            // Plain browser: choose with the normal file picker (preview only)
+            const inp = document.getElementById('mediaInput');
+            inp.accept = {
+                image: 'image/png,image/jpeg,image/webp,image/bmp',
+                audio: 'audio/wav,audio/x-wav,.wav',
+                video: 'video/mp4,video/webm,.mkv,.mov,.m4v,.avi'
+            }[activeMediaType];
+            inp.click();
+        }
+
+        function handleMediaUpload(e) {
+            const f = e.target.files[0];
+            if (f) previewLocalFile(f);
+            e.target.value = '';
+        }
+
+        function parseWav(buf) {
+            const dv = new DataView(buf);
+            const tag = (o) => String.fromCharCode(dv.getUint8(o), dv.getUint8(o + 1), dv.getUint8(o + 2), dv.getUint8(o + 3));
+            if (buf.byteLength < 44 || tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return null;
+            let off = 12, fmt = null, data = null;
+            while (off + 8 <= buf.byteLength) {
+                const id = tag(off), size = dv.getUint32(off + 4, true);
+                if (id === 'fmt ') fmt = { format: dv.getUint16(off + 8, true), ch: dv.getUint16(off + 10, true), rate: dv.getUint32(off + 12, true), bits: dv.getUint16(off + 22, true) };
+                else if (id === 'data') { data = { start: off + 8, len: Math.min(size, buf.byteLength - off - 8) }; break; }
+                off += 8 + size + (size % 2);
+            }
+            if (!fmt || !data || (fmt.bits !== 8 && fmt.bits !== 16)) return null;
+            const bytes = fmt.bits / 8, frames = Math.floor(data.len / (bytes * fmt.ch));
+            const W = 480, step = Math.max(1, Math.floor(frames / W)), peaks = [];
+            for (let i = 0; i < W && i * step < frames; i++) {
+                let mn = 1, mx = -1;
+                const stride = Math.max(1, Math.floor(step / 200));
+                for (let f = i * step; f < Math.min(frames, (i + 1) * step); f += stride) {
+                    const o = data.start + f * fmt.ch * bytes;
+                    const v = bytes === 2 ? dv.getInt16(o, true) / 32768 : (dv.getUint8(o) - 128) / 128;
+                    if (v < mn) mn = v;
+                    if (v > mx) mx = v;
+                }
+                peaks.push([mn, mx]);
+            }
+            return { rate: fmt.rate, bits: fmt.bits, channels: fmt.ch, slots: frames * fmt.ch, peaks };
+        }
+
+        // Browser-side preview (used when the desktop engine is not attached)
+        async function previewLocalFile(file) {
+            const kind = activeMediaType;
+            const r = { kind, name: file.name, ext: (file.name.split('.').pop() || '').toUpperCase(), size: file.size, cap: {}, localOnly: true };
+            const capFor = (slots) => { for (const d of [1, 2, 3]) r.cap[String(d)] = Math.max(0, Math.floor(((slots - 96) * d) / 8)); };
+
+            if (kind === 'image') {
+                if (!file.type.startsWith('image/')) { showToast('Please choose an image file (PNG, JPG, WEBP, BMP)', 'error'); return; }
+                const url = URL.createObjectURL(file);
+                const img = await new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = url; });
+                if (!img) { showToast('Could not read this image', 'error'); return; }
+                r.preview = url;
+                r.dim = `${img.naturalWidth}x${img.naturalHeight}`;
+                capFor(img.naturalWidth * img.naturalHeight * 3);
+            } else if (kind === 'audio') {
+                if (!file.name.toLowerCase().endsWith('.wav')) { showToast('Please choose an uncompressed WAV audio file', 'error'); return; }
+                const w = parseWav(await file.arrayBuffer());
+                if (!w) { showToast('Only 8-bit or 16-bit PCM WAV files are supported', 'error'); return; }
+                r.url = URL.createObjectURL(file);
+                r.peaks = w.peaks;
+                r.dim = `${w.rate / 1000}k • ${w.bits}b`;
+                r.meta = `${w.rate / 1000} kHz • ${w.bits}-bit PCM • ${w.channels} ch`;
+                capFor(w.slots);
+            } else {
+                if (!file.type.startsWith('video/') && !/\.(mp4|m4v|mov|webm|mkv|avi)$/i.test(file.name)) { showToast('Please choose an MP4, WEBM or MKV video file', 'error'); return; }
+                r.url = URL.createObjectURL(file);
+                r.dim = 'Video Stream';
+            }
+            applyCarrier(r);
+            showToast('Preview only: open the HideIt desktop app (python hideit.py) to encode or decode.', 'info', 6000);
+        }
+
+        function engineMissing() {
+            if (carrier && carrier.localOnly) {
+                showToast('This is a browser preview. Run the desktop app (python hideit.py) to encode, decode or inspect.', 'error');
+                return true;
+            }
+            return false;
+        }
+
+        function handleCarrierResult(r) {
+            if (!r || r.cancelled) return;
+            if (r.error) { showToast(r.error, 'error'); return; }
+            applyCarrier(r);
+        }
+
+        function applyCarrier(r) {
+            carrier = r;
+            const show = (id, on) => document.getElementById(id).classList.toggle('hidden', !on);
+            show('imagePreview', r.kind === 'image');
+            show('audioPreviewGroup', r.kind === 'audio');
+            show('videoPreviewGroup', r.kind === 'video');
+            show('uploadPrompt', false);
+            show('previewWrapper', true);
+
+            if (r.kind === 'image') {
+                document.getElementById('imagePreview').src = r.preview;
+            } else if (r.kind === 'audio') {
+                document.getElementById('audioFileName').innerText = r.name;
+                document.getElementById('audioMeta').innerText = `${r.meta} • ${(r.size / 1024).toFixed(1)} KB`;
+                document.getElementById('audioPlayer').src = r.url;
+                drawAudioWaveform(r.peaks);
+            } else {
+                document.getElementById('videoPlayer').src = r.url;
+            }
+
+            document.getElementById('specDim').innerText = r.dim;
+            document.getElementById('specSize').innerText = `${(r.size / 1024).toFixed(1)} KB`;
+            const badge = document.getElementById('fileTypeBadge');
+            badge.innerText = r.ext;
+            badge.classList.remove('hidden');
+
+            syncDepthState();
+            updateCapacityGauge();
+            showToast(`${r.kind.charAt(0).toUpperCase() + r.kind.slice(1)} carrier loaded`, 'success');
+            if (currentMode === 'inspector') renderBitPlane('rgb', true);
+        }
+
+        // Draw Audio Waveform on Canvas (min/max peaks computed by the engine)
+        function drawAudioWaveform(peaks) {
+            const canvas = document.getElementById('waveformCanvas');
+            canvas.width = 600; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#8b5cf6';
+            ctx.lineWidth = 1.5;
+            const amp = canvas.height / 2;
+            ctx.beginPath();
+            peaks.forEach((p, i) => {
+                const x = (i / Math.max(1, peaks.length - 1)) * canvas.width;
+                ctx.moveTo(x, amp - p[1] * (amp - 2));
+                ctx.lineTo(x, amp - p[0] * (amp - 2) + 1);
+            });
+            ctx.stroke();
+        }
+
+        function resetMedia(e) {
+            if (e) e.stopPropagation();
+            carrier = null;
+            if (api()) api().clear_carrier();
+            ['audioPlayer', 'videoPlayer'].forEach(id => {
+                const el = document.getElementById(id);
+                el.pause(); el.removeAttribute('src'); el.load();
+            });
+
+            document.getElementById('uploadPrompt').classList.remove('hidden');
+            document.getElementById('previewWrapper').classList.add('hidden');
+            document.getElementById('fileTypeBadge').classList.add('hidden');
+
+            document.getElementById('specDim').innerText = '--';
+            document.getElementById('specSize').innerText = '-- KB';
+            document.getElementById('specCap').innerText = '0 KB';
+            document.getElementById('capacityBar').style.width = '0%';
+            document.getElementById('capacityPercent').innerText = '0%';
+            syncDepthState();
+        }
+
+        // LSB bit depth does not apply to the video trailer method
+        function syncDepthState() {
+            const sel = document.getElementById('bitDepthSelect');
+            const off = activeMediaType === 'video';
+            sel.disabled = off;
+            sel.classList.toggle('opacity-50', off);
+        }
+
+        function togglePayloadType(type) {
+            activePayloadType = type;
+            const textBtn = document.getElementById('typeTextBtn');
+            const fileBtn = document.getElementById('typeFileBtn');
+
+            if (type === 'text') {
+                textBtn.className = "px-3 py-1 rounded-md font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+                fileBtn.className = "px-3 py-1 rounded-md font-medium text-slate-400 hover:text-slate-200";
+                document.getElementById('textPayloadGroup').classList.remove('hidden');
+                document.getElementById('filePayloadGroup').classList.add('hidden');
+            } else {
+                fileBtn.className = "px-3 py-1 rounded-md font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+                textBtn.className = "px-3 py-1 rounded-md font-medium text-slate-400 hover:text-slate-200";
+                document.getElementById('filePayloadGroup').classList.remove('hidden');
+                document.getElementById('textPayloadGroup').classList.add('hidden');
+            }
+            updateCapacityGauge();
+        }
+
+        async function pickSecretFile() {
+            if (!needApi()) return;
+            const r = await api().pick_secret();
+            if (!r || r.cancelled) return;
+            if (r.error) { showToast(r.error, 'error'); return; }
+            secretInfo = r;
+            document.getElementById('secretFileName').innerText = `${r.name} (${(r.size / 1024).toFixed(1)} KB)`;
+            updateCapacityGauge();
+        }
+
+        function updateCapacityGauge() {
+            let maxBytes = 0;
+            let unlimited = false;
+            const bitDepth = parseInt(document.getElementById('bitDepthSelect').value);
+
+            if (carrier) {
+                if (carrier.kind === 'video') unlimited = true;
+                else maxBytes = carrier.cap[String(bitDepth)] || 0;
+            }
+
+            document.getElementById('specCap').innerText = unlimited ? 'Unlimited' : `${(maxBytes / 1024).toFixed(1)} KB`;
+
+            let payloadBytes = 0;
+            const text = document.getElementById('secretText').value;
+            document.getElementById('charCount').innerText = `${text.length} chars`;
+            if (activePayloadType === 'text') {
+                const n = new TextEncoder().encode(text).length;
+                payloadBytes = n ? n + 3 : 0;
+            } else if (secretInfo) {
+                payloadBytes = secretInfo.size + 3 + new TextEncoder().encode(secretInfo.name).length;
+            }
+            if (payloadBytes && document.getElementById('encryptToggle').checked) payloadBytes += AES_OVERHEAD;
+
+            const usage = maxBytes > 0 ? Math.min(100, (payloadBytes / maxBytes) * 100) : 0;
+            document.getElementById('capacityBar').style.width = `${usage.toFixed(1)}%`;
+            document.getElementById('capacityPercent').innerText = `${usage.toFixed(1)}%`;
+        }
+
+        function toggleEncryptionField() {
+            const encDiv = document.getElementById('encryptionFields');
+            encDiv.classList.toggle('hidden', !document.getElementById('encryptToggle').checked);
+            updateCapacityGauge();
+        }
+
+        function checkPasswordStrength(pass) {
+            const bar = document.getElementById('passStrengthBar');
+            const label = document.getElementById('passStrengthLabel');
+            let score = 0;
+            if (pass.length > 5) score += 25;
+            if (pass.length > 9) score += 25;
+            if (/[A-Z]/.test(pass)) score += 25;
+            if (/[0-9!@#$%^&*]/.test(pass)) score += 25;
+
+            bar.style.width = `${score}%`;
+            if (score === 0) { label.innerText = 'None'; label.className = 'font-mono text-slate-500'; bar.className = 'bg-slate-700 h-full'; }
+            else if (score <= 50) { label.innerText = 'Weak'; label.className = 'font-mono text-red-400'; bar.className = 'bg-red-500 h-full'; }
+            else if (score <= 75) { label.innerText = 'Medium'; label.className = 'font-mono text-amber-400'; bar.className = 'bg-amber-500 h-full'; }
+            else { label.innerText = 'Strong'; label.className = 'font-mono text-emerald-400'; bar.className = 'bg-emerald-500 h-full'; }
+        }
+
+        function togglePassVisibility(id) {
+            const input = document.getElementById(id);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        async function executeEncoding() {
+            const isFile = activePayloadType === 'file';
+            const text = document.getElementById('secretText').value;
+            if (!isFile && !text) { showToast('Please enter a secret message!', 'error'); return; }
+            if (isFile && !secretInfo) { showToast('Please select a payload file!', 'error'); return; }
+            if (!carrier) { showToast(`Please upload a ${activeMediaType} carrier first!`, 'error'); return; }
+            if (engineMissing()) return;
+
+            const aes = document.getElementById('encryptToggle').checked;
+            const passphrase = document.getElementById('encodePassphrase').value;
+            if (aes && !passphrase) { showToast('Please enter an encryption passphrase!', 'error'); return; }
+            if (!needApi()) return;
+
+            showToast(aes ? 'Encoding… deriving AES-256 key' : 'Encoding…', 'info');
+            const r = await api().encode({
+                is_file: isFile, text, aes, passphrase,
+                depth: parseInt(document.getElementById('bitDepthSelect').value)
+            });
+            if (!r || r.cancelled) return;
+            if (r.error) { showToast(r.error, 'error'); return; }
+            const extra = (r.encrypted ? ' • AES-256-GCM' : '') + (r.kind !== 'video' ? ` • ${r.depth}-bit LSB` : '');
+            showToast(`Stego ${r.kind} saved: ${r.name}${extra}`, 'success');
+        }
+
+        async function executeDecoding() {
+            if (!carrier) { showToast(`Upload a stego ${activeMediaType} file first!`, 'error'); return; }
+            if (engineMissing()) return;
+            if (!needApi()) return;
+            showToast('Scanning carrier…', 'info');
+            const r = await api().decode({ passphrase: document.getElementById('decodePassphrase').value });
+            if (!r || r.error) { showToast(r ? r.error : 'Decoding failed', 'error'); return; }
+
+            const resultBox = document.getElementById('extractionResultBox');
+            const typeBadge = document.getElementById('decodedTypeBadge');
+            const textWrapper = document.getElementById('decodedTextWrapper');
+            const fileWrapper = document.getElementById('decodedFileWrapper');
+            resultBox.classList.remove('hidden');
+            lastDecoded = r;
+
+            if (!r.is_file) {
+                typeBadge.innerText = 'TEXT MESSAGE';
+                document.getElementById('decodedTextOutput').innerText = r.text;
+                textWrapper.classList.remove('hidden');
+                fileWrapper.classList.add('hidden');
+            } else {
+                typeBadge.innerText = 'FILE PAYLOAD';
+                document.getElementById('decodedFileName').innerText = r.name;
+                document.getElementById('decodedFileSize').innerText = `${(r.size / 1024).toFixed(1)} KB`;
+                fileWrapper.classList.remove('hidden');
+                textWrapper.classList.add('hidden');
+            }
+            showToast('Payload successfully extracted!', 'success');
+        }
+
+        async function saveExtracted(e) {
+            if (e) e.preventDefault();
+            if (!needApi()) return;
+            const r = await api().save_extracted();
+            if (!r || r.cancelled) return;
+            if (r.error) { showToast(r.error, 'error'); return; }
+            showToast(`Saved ${r.name}`, 'success');
+        }
+
+        async function renderBitPlane(mode, silent) {
+            if (!carrier || carrier.kind === 'video') {
+                if (!silent) showToast('Upload an image or audio carrier to analyze', 'error');
+                return;
+            }
+            if (carrier.localOnly) { if (!silent) engineMissing(); return; }
+            if (!needApi()) return;
+            const r = await api().inspect(mode);
+            if (!r || r.error) { if (!silent) showToast(r ? r.error : 'Analysis failed', 'error'); return; }
+
+            const canvas = document.getElementById('inspectorCanvas');
+            document.getElementById('inspectorPlaceholder').classList.add('hidden');
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+            };
+            img.src = r.png;
+        }
+
+        async function copyDecodedText() {
+            const text = document.getElementById('decodedTextOutput').innerText;
+            if (!text) return;
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch (err) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                ta.remove();
+            }
+            showToast('Copied to clipboard!', 'success');
+        }
+
+        function showToast(message, type = 'info', ms) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            const iconName = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-triangle' : 'info';
+            const colorClasses = type === 'success'
+                ? 'bg-slate-900/90 border-emerald-500/50 text-emerald-300'
+                : type === 'error'
+                ? 'bg-slate-900/90 border-red-500/50 text-red-300'
+                : 'bg-slate-900/90 border-cyan-500/50 text-cyan-300';
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-md shadow-xl text-xs font-medium transition-all duration-300 pointer-events-auto transform translate-y-2 opacity-0 max-w-sm ${colorClasses}`;
+            toast.innerHTML = `
+                <i data-lucide="${iconName}" class="w-4 h-4 shrink-0"></i>
+                <span class="whitespace-pre-line"></span>
+            `;
+            toast.querySelector('span').textContent = message;
+
+            container.appendChild(toast);
+            renderIcons();
+
+            requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, ms || (type === 'error' ? 6500 : 3500));
+        }
+    </script>
+</body>
+</html>
